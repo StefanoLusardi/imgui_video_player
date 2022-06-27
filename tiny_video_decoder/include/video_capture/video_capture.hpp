@@ -66,7 +66,6 @@ private:
     AVFrame* _tmp_frame;
     
     SwsContext* _sws_ctx;
-    AVDictionary* _options;
     int _stream_index;
     double _timestamp_unit;
 

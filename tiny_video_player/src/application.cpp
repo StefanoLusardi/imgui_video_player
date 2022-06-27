@@ -93,11 +93,11 @@ int application::run(int argc, char **argv)
     double lasttime = glfwGetTime();
     while (!glfwWindowShouldClose(window))
     {
-        while (glfwGetTime() < lasttime + 1.0/TARGET_FPS)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(1000 * 1/TARGET_FPS)));
-        }
-        lasttime += 1.0/TARGET_FPS;
+        // while (glfwGetTime() < lasttime + 1.0/TARGET_FPS)
+        // {
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(1000 * 1/TARGET_FPS)));
+        // }
+        // lasttime += 1.0/TARGET_FPS;
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();

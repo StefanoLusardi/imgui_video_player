@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <thread>
 
 #include "video_capture/video_capture.hpp"
 #include "video_capture/raw_frame.hpp"

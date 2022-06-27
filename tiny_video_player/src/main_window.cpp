@@ -61,24 +61,21 @@ void main_window::decode_thread()
 	}
 }
 
-double get_elapsed_time()
-{
-	static std::chrono::time_point<std::chrono::steady_clock, std::chrono::duration<double>> start_time = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_time = std::chrono::steady_clock::now() - start_time;
-	return elapsed_time.count();
-}
-
 void main_window::update()
 {
-    if (get_elapsed_time() > _current_frame->pts)
+    if (glfwGetTime() > _current_frame->pts)
     {
         if(!_frame_queue.try_get(&_current_frame))
+        {
             return;
+        }
+        else
+        {
+            const auto size = _video_decoder->get_frame_size();
+            const auto [frame_width, frame_height] = size.value();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGB, GL_UNSIGNED_BYTE, (const GLvoid*)_current_frame->data_buffer);
+        }
     }
-
-    const auto size = _video_decoder->get_frame_size();
-    const auto [frame_width, frame_height] = size.value();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGB, GL_UNSIGNED_BYTE, (const GLvoid*)_current_frame->data_buffer);
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
 

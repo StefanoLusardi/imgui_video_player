@@ -54,13 +54,14 @@ bool video_capture::open(const std::string& video_path, decode_support decode_pr
         return false;
     }
 
-    if (auto r = av_dict_set(&_options, "rtsp_transport", "tcp", 0); r < 0)
+    AVDictionary* options = nullptr;
+    if (auto r = av_dict_set(&options, "rtsp_transport", "tcp", 0); r < 0)
     {
         log_error("av_dict_set", vc::logger::get().err2str(r));
         return false;
     }
 
-    if (auto r = avformat_open_input(&_format_ctx, video_path.c_str(), nullptr, &_options); r < 0)
+    if (auto r = avformat_open_input(&_format_ctx, video_path.c_str(), nullptr, &options); r < 0)
     {
         log_error("avformat_open_input", vc::logger::get().err2str(r));
         return false;
@@ -392,8 +393,8 @@ void video_capture::release()
         avformat_free_context(_format_ctx);
     }
 
-    if (_options)
-       av_dict_free(&_options);
+    // if (_options)
+    //    av_dict_free(&_options);
 
     if(_packet)
         av_packet_free(&_packet);
@@ -427,7 +428,7 @@ void video_capture::init()
     _tmp_frame = nullptr;
 
     _sws_ctx = nullptr;
-    _options = nullptr;
+    // _options = nullptr;
     _stream_index = -1;
 }
 

@@ -4,8 +4,6 @@
 
 struct GLFWwindow;
 
-namespace vc { class video_capture; }
-
 namespace tvp
 {
 class main_window;
@@ -23,7 +21,6 @@ private:
     void update();
 
     std::unique_ptr<main_window> _main_window;
-    std::unique_ptr<vc::video_capture> _video_decoder;
     GLFWwindow *window;
 };
 

@@ -353,7 +353,7 @@ bool video_capture::read(uint8_t** data)
     return true;
 }
 
-bool video_capture::read(raw_frame2* frame)
+bool video_capture::read(raw_frame* frame)
 {
     if(!grab())
         return false;

@@ -21,7 +21,6 @@ struct AVBufferRef;
 namespace vc
 {
 struct raw_frame;
-struct raw_frame2;
 enum class decode_support { none, SW, HW };
 enum class log_level { all, info, error };
 
@@ -37,7 +36,7 @@ public:
     bool open(const std::string& video_path, decode_support decode_preference = decode_support::none);
     bool is_opened() const;
     bool read(uint8_t** data);
-    bool read(raw_frame2* frame);
+    bool read(raw_frame* frame);
     void release();
     
     auto get_frame_count() const -> std::optional<int>;

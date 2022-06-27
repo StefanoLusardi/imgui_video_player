@@ -1,67 +1,96 @@
 #include "main_window.hpp"
+#include "video_capture/raw_frame.hpp"
 #include <imgui.h>
+#include <GLFW/glfw3.h>
+
+#include <iostream>
 
 
 namespace tvp
 {
+main_window::main_window()
+    : _video_decoder { std::make_unique<vc::video_capture>() }
+    , _current_frame { std::make_unique<vc::raw_frame>() }
+    , _frame_queue { vc::frame_queue<std::unique_ptr<vc::raw_frame>>(3) }
+{
+}
+
 main_window::~main_window()
 {
 }
 
-void main_window::update_ui()
+bool main_window::init()
 {
-    // ImGui::ShowDemoWindow();
-    // return;
+    vc::video_capture vc;
+	const auto video_path = "v.mkv";
 
+	if (!_video_decoder->open(video_path, vc::decode_support::SW))
     {
-        static ImGuiWindowFlags main_window_flags =
-            ImGuiWindowFlags_NoBringToFrontOnFocus |
-            ImGuiWindowFlags_NoDecoration |
-            ImGuiWindowFlags_AlwaysAutoResize |
-            ImGuiWindowFlags_NoSavedSettings |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoNav;
-
-        const ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(viewport->WorkPos);
-        ImGui::SetNextWindowSize(viewport->WorkSize);
-
-        if (ImGui::Begin("MainWindow", NULL, main_window_flags))
-        {
-            // ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            // const float size = 50;
-            // static ImVec4 rgba_color = ImVec4(1.0f, 1.0f, 0.4f, 1.0f);
-            // const ImU32 color = ImColor(rgba_color);
-            // auto window_center_w = ImGui::GetWindowWidth() * 0.5f;
-            // auto window_center_h = ImGui::GetWindowHeight() * 0.5f;
-            // draw_list->AddCircle(ImVec2(window_center_w, window_center_h), size, color);
-
-            // draw_list->AddCircle(ImVec2(size, size), size, color);
-            // draw_list->AddCircle(ImVec2(ImGui::GetWindowWidth() - size, ImGui::GetWindowHeight() - size), size, color);
-        }
-
-        ImGui::End();
+        // log error
+        return false;
     }
 
+	glGenTextures(1, &_frame_texture_id);
+	glBindTexture(GL_TEXTURE_2D, _frame_texture_id);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    _decode_thread = std::thread([this]{ decode_thread(); });
+
+    return true;
+}
+
+void main_window::decode_thread()
+{
+    int frames_decoded = 0;
+	while(true)
+	{
+		auto next_frame = std::make_unique<vc::raw_frame>();
+		if(!_video_decoder->read(next_frame.get()))
+		{
+			std::cout << "Video finished" << std::endl;
+			std::cout << "frames decoded: " << frames_decoded << std::endl;
+			break;
+		}
+
+		_frame_queue.put(std::move(next_frame));
+		++frames_decoded;
+	}
+}
+
+double get_elapsed_time()
+{
+	static std::chrono::time_point<std::chrono::steady_clock, std::chrono::duration<double>> start_time = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_time = std::chrono::steady_clock::now() - start_time;
+	return elapsed_time.count();
+}
+
+void main_window::update()
+{
+    if (get_elapsed_time() > _current_frame->pts)
     {
-        static ImGuiWindowFlags ui_info_flags =
-            ImGuiWindowFlags_NoDecoration |
-            ImGuiWindowFlags_AlwaysAutoResize |
-            ImGuiWindowFlags_NoSavedSettings |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoNav |
-            ImGuiWindowFlags_NoFocusOnAppearing;
+        if(!_frame_queue.try_get(&_current_frame))
+            return;
+    }
 
-        const float PAD = 10.0f;
-        const ImGuiViewport* viewport = ImGui::GetMainViewport();
-        const auto window_pos = ImVec2{ viewport->WorkSize.x - PAD, viewport->WorkSize.y - PAD };
-        const auto window_pos_pivot = ImVec2{ 1.0f, 1.0f };
-        ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-        ImGui::SetNextWindowBgAlpha(0.2f);
+    const auto size = _video_decoder->get_frame_size();
+    const auto [frame_width, frame_height] = size.value();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_width, frame_height, 0, GL_RGB, GL_UNSIGNED_BYTE, (const GLvoid*)_current_frame->data_buffer);
 
-        ImGui::Begin("UI Info", nullptr, ui_info_flags);
-        ImGui::Text("%.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
-        ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+    {
+        static ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+        ImGui::SetNextWindowPos(viewport->Pos);
+        ImGui::SetNextWindowSize(viewport->Size);
+
+        ImGui::Begin("MainWindow", nullptr, main_window_flags);
+        ImGui::Image((void*)static_cast<uintptr_t>(_frame_texture_id), viewport->Size);
         ImGui::End();
     }
 }

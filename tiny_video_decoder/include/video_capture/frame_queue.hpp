@@ -1,5 +1,7 @@
 #pragma once
 
+#include "api.hpp"
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -11,7 +13,7 @@
 namespace vc
 {
 template <typename T>
-class frame_queue
+class API_VIDEO_CAPTURE frame_queue
 {
 public:
 	using value_type = T;

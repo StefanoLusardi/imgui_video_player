@@ -13,7 +13,9 @@ add_library(${TARGET_NAME} STATIC
 
 find_package(ffmpeg)
 
-target_compile_definitions(${TARGET_NAME} PRIVATE LIB_VIDEO_CAPTURE)
+target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
+
+target_compile_definitions(${TARGET_NAME} PUBLIC LIB_VIDEO_CAPTURE)
 
 target_include_directories(${TARGET_NAME} PUBLIC include)
 

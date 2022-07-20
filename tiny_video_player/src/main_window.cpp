@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <thread>
 
 
 namespace tvp
@@ -11,7 +12,7 @@ namespace tvp
 main_window::main_window()
     : _video_decoder { std::make_unique<vc::video_capture>() }
     , _current_frame { std::make_unique<vc::raw_frame>() }
-    , _frame_queue { vc::frame_queue<std::unique_ptr<vc::raw_frame>>(3) }
+    , _frame_queue { vc::frame_queue<std::unique_ptr<vc::raw_frame>>(16) }
 {
 }
 
@@ -22,7 +23,7 @@ main_window::~main_window()
 bool main_window::init()
 {
     vc::video_capture vc;
-	const auto video_path = "v.mkv";
+    const auto video_path = "v.mkv";
 
 	if (!_video_decoder->open(video_path, vc::decode_support::SW))
     {
@@ -65,11 +66,7 @@ void main_window::update()
 {
     if (glfwGetTime() > _current_frame->pts)
     {
-        if(!_frame_queue.try_get(&_current_frame))
-        {
-            return;
-        }
-        else
+        if(_frame_queue.try_get(&_current_frame))
         {
             const auto size = _video_decoder->get_frame_size();
             const auto [frame_width, frame_height] = size.value();
@@ -78,18 +75,15 @@ void main_window::update()
     }
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
 
-    {
-        static ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+    static ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-        ImGui::SetNextWindowPos(viewport->Pos);
-        ImGui::SetNextWindowSize(viewport->Size);
-
-        ImGui::Begin("MainWindow", nullptr, main_window_flags);
-        ImGui::Image((void*)static_cast<uintptr_t>(_frame_texture_id), viewport->Size);
-        ImGui::End();
-    }
+    ImGui::Begin("MainWindow", nullptr, main_window_flags);
+    ImGui::Image((void*)static_cast<uintptr_t>(_frame_texture_id), viewport->Size);
+    ImGui::End();
 }
 
 } // namespace app

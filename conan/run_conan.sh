@@ -16,4 +16,5 @@ conan install . \
     --settings build_type=$BUILD_TYPE \
     --settings compiler=$COMPILER \
     --settings compiler.version=$COMPILER_VERSION \
-    --build missing
+    --build missing \
+    --update

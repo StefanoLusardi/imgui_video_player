@@ -16,6 +16,25 @@ std::unique_ptr<application> create_application()
     return std::make_unique<application>();
 }
 
+template<std::intmax_t FPS>
+class frame_rater {
+public:
+    frame_rater() :                 // initialize the object keeping the pace
+        time_between_frames{1},     // std::ratio<1, FPS> seconds
+        tp{std::chrono::steady_clock::now()}
+    {}
+
+    void sleep()
+    {
+        tp += time_between_frames;
+        std::this_thread::sleep_until(tp);
+    }
+
+private:
+    std::chrono::duration<double, std::ratio<1, FPS>> time_between_frames; // 1/FPS
+    std::chrono::time_point<std::chrono::steady_clock, decltype(time_between_frames)> tp;
+};
+
 application::application()
 : _main_window{ std::make_unique<main_window>() }
 {
@@ -89,16 +108,9 @@ int application::run(int argc, char **argv)
 
     glClearColor(0.f, 0.f, 0.f, 0.f);
 
-    const int TARGET_FPS = 30;
-    double lasttime = glfwGetTime();
+    frame_rater<30> limiter;
     while (!glfwWindowShouldClose(window))
     {
-        // while (glfwGetTime() < lasttime + 1.0/TARGET_FPS)
-        // {
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(1000 * 1/TARGET_FPS)));
-        // }
-        // lasttime += 1.0/TARGET_FPS;
-
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -128,6 +140,8 @@ int application::run(int argc, char **argv)
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        limiter.sleep();
     }
 
     return 0;

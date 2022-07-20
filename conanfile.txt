@@ -1,7 +1,7 @@
 [requires]
-imgui/1.87
-glfw/3.3.7
-ffmpeg/5.0
+imgui/1.87@#c5aee830a78db98161274476292fe640
+glfw/3.3.7@#a2a0d8e29da482e589da1f466cfca451
+ffmpeg/5.0@#bfd061d36147c4f510bdac1ec5d17d90
 
 [generators]
 CMakeDeps
